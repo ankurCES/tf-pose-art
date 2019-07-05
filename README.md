@@ -4,6 +4,8 @@ Inspired by ["The Treachery of Sanctuary"](https://youtu.be/I5__9hq-yas)
 
 This tries to create art based on the human pose estimation model. Used tensorflow + Coco model for human pose estimation and [Babylon.js](https://www.babylonjs.com/) to generate the art based on movement.
 
+[Demo Video](https://youtu.be/lNv9GN---EQ)
+
 ## Requirements
 
 - Python 3.6
