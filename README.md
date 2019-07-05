@@ -12,7 +12,7 @@ This tries to create art based on the human pose estimation model. Used tensorfl
 - SimpleWebSocketServer
 - node + npm
 
-Download the model from [here](https://drive.google.com/file/d/10z3ft9I8t-Uq2QtYxDpJ-reHd3kbqFFW/view?usp=sharing) and place it in models/keras
+Download the model from [here](https://drive.google.com/file/d/10z3ft9I8t-Uq2QtYxDpJ-reHd3kbqFFW/view?usp=sharing) and place it in `models/keras` directory
 
 
 ## Steps to run
@@ -30,4 +30,4 @@ Navigate in your browser to [http://localhost:3000](http://localhost:3000)
 
 ## High Level Flow
 
-![alt text]()
+![alt text](https://raw.githubusercontent.com/ankurCES/tf-pose-art/master/assets/high_level_flow.png)
