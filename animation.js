@@ -2,6 +2,46 @@ var canvas = document.getElementById("renderCanvas");
 
 var scr_width = screen.width;
 
+function get_max_val(arr) {
+  var arrCopy = arr;
+
+  var max  = Math.max.apply(null, arr);
+
+  var max_index = arr.indexOf(max);
+
+  arrCopy.splice(max_index, 1);
+
+  var sec_max = Math.max.apply(null, arrCopy);
+
+  var sec_max_idx = arr.indexOf(sec_max);
+
+  return [max_index, sec_max_idx];
+}
+
+function get_emotion_color(emotion) {
+  available_emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral'];
+
+  emo_scores = [];
+
+  for(emo in available_emotions){
+    // console.log(emo)
+    score = emotion[available_emotions[emo]];
+    emo_scores.push(score);
+  }
+  idxs = get_max_val(emo_scores)
+
+  colors_emo_map = [
+    {'r': 0.8889087296526011, 'g': 0.2988565335988701, 'b': 0.07763453453475722},
+    {'r': 0.7027016569409856, 'g': 0.3571351910021412, 'b': 0.9065863991822648},
+    {'r': 0.9065863991822648, 'g': 0.7824799012882336, 'b': 0.9065863991822648},
+    {'r': 0.06315211265975706, 'g': 0.5758608592745578, 'b': 0.9065863991822648},
+    {'r': 0.015561667432201396, 'g': 0.45, 'b': 0.19947961799571723},
+    {'r': 0.1962859478428038, 'g': 0.19947961799571723, 'b': 0},
+    {'r': 0.4646446609406726, 'g': 0.4430585286555533, 'b': 0.4430585286555533}
+  ];
+  return [colors_emo_map[idxs[0]], colors_emo_map[idxs[1]]];
+}
+
 // Dr. Strange Effect
 var createDrStrange = function() {
     var scene = new BABYLON.Scene(engine);
@@ -71,6 +111,7 @@ var createDrStrange = function() {
         x = msg.x;
         y = msg.y;
         part = msg.part;
+        emotion = msg.emotion;
 
         allowed_parts=['nose', 'Rwri', 'Lwri'];
 
@@ -135,6 +176,10 @@ var createSceneCube = function() {
 
         nb = 1600 * (x + y);
         fact = 100 * (x + y);
+
+        if (y == 0 && x == 0){
+          location.reload();
+        }
     };
 
     // custom position function for SPS creation
@@ -154,7 +199,7 @@ var createSceneCube = function() {
         sideOrientation: BABYLON.Mesh.DOUBLESIDE
     }, scene);
     var SPS = new BABYLON.SolidParticleSystem('SPS', scene, {
-        updatable: false
+        updatable: true
     });
     SPS.addShape(triangle, nb, {
         positionFunction: myPositionFunction
@@ -170,10 +215,6 @@ var createSceneCube = function() {
         pl.position = camera.position;
         SPS.mesh.rotation.y += 0.01 * y;
         SPS.mesh.rotation.x += 0.01 * x;
-        //SPS.mesh.rotation.z += 0.005;
-        if (SPS.mesh.rotation.y == 0 && SPS.mesh.rotation.x == 0){
-          location.reload();
-        }
     });
 
     return scene;
@@ -208,10 +249,17 @@ var createSceneParticle = function() {
         x = msg.x;
         y = msg.y;
 
+        console.log(msg)
+
         fountain.position.x = 5 * Math.cos(x);
         fountain.position.y = 5 * Math.sin(y);
 
         particleSystem.activeParticleCount = 2000 * (x + y);
+
+        colors = get_emotion_color(msg.emotion);
+
+        particleSystem['color2'] = colors[0]
+        particleSystem['colorDead'] = colors[1]
 
         if(particleSystem.activeParticleCount == 0){
           location.reload();
@@ -249,9 +297,6 @@ var createSceneParticle = function() {
     var alpha = 0;
     var moveEmitter = false;
     var rotateEmitter = true;
-
-    // fountain.position.x = 5 * Math.cos(x);
-    // fountain.position.y = 5 * Math.sin(y);
 
     return scene;
 }

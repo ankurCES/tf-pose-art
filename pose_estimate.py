@@ -13,8 +13,15 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from SimpleWebSocketServer import SimpleWebSocketServer, WebSocket
 import threading
+from keras.preprocessing import image
+import collections
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+face_cascade = cv2.CascadeClassifier('model\\emotion\\haarcascade_frontalface_default.xml')
+from keras.models import model_from_json
+em_model = model_from_json(open("model\\emotion\\facial_expression_model_structure.json", "r").read())
+em_model.load_weights('model\\emotion\\facial_expression_model_weights.h5') #load weights
 
 from model.cmu_model import get_testing_model
 
@@ -57,10 +64,51 @@ def run_server():
                                    selectInterval=(1000.0 / 15) / 1000)
     server.serveforever()
 
+def detect_emotion(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
+    emotions = ('angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral')
+
+    emo_dict = {
+        'angry': 0,
+        'disgust': 0,
+        'fear': 0,
+        'happy': 0,
+        'sad': 0,
+        'surprise': 0,
+        'neutral': 0
+    }
+
+    emotion = 'neutral'
+    for (x,y,w,h) in faces:
+        cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2) #draw rectangle to main image
+        detected_face = img[int(y):int(y+h), int(x):int(x+w)] #crop detected face
+        detected_face = cv2.cvtColor(detected_face, cv2.COLOR_BGR2GRAY) #transform to gray scale
+        detected_face = cv2.resize(detected_face, (48, 48)) #resize to 48x48
+
+        img_pixels = image.img_to_array(detected_face)
+        img_pixels = np.expand_dims(img_pixels, axis = 0)
+
+        img_pixels /= 255 #pixels are in scale of [0, 255]. normalize all pixels in scale of [0, 1]
+
+        predictions = em_model.predict(img_pixels) #store probabilities of 7 expressions
+
+        #find max indexed array 0: angry, 1:disgust, 2:fear, 3:happy, 4:sad, 5:surprise, 6:neutral
+        max_index = np.argmax(predictions[0])
+
+        for i in range(0,7):
+            emo_dict[emotions[i]] = round(predictions[0][i]*100, 2)
+
+        emotion = emotions[max_index]
+    sorted_x = sorted(emo_dict.items(), key=lambda kv: kv[1])
+    sorted_dict = collections.OrderedDict(sorted_x)
+    return sorted_dict
 
 
 def process (input_image, params, model_params):
+
+    emotion = detect_emotion(input_image)
 
     oriImg = cv2.cvtColor(input_image, cv2.COLOR_RGB2BGR)
     factor = 0.3
@@ -246,12 +294,12 @@ def process (input_image, params, model_params):
             #cv2.circle(canvas, all_peaks[i][j][0:2], 4, colors[i], thickness=-1)
             cv2.circle(cropped, (a,b), 2, colors[i], thickness=5)
             for client in clients:
-                client.sendMessage(json.dumps({'x': int(a), 'y': int(b), 'part': idx_to_parts[i]}))
+                client.sendMessage(json.dumps({'x': int(a), 'y': int(b), 'part': idx_to_parts[i], 'emotion': emotion}))
     stickwidth = 1
 
     if len(candidate) == 0:
         for client in clients:
-            client.sendMessage(json.dumps({'x': 0, 'y': 0}))
+            client.sendMessage(json.dumps({'x': 0, 'y': 0, 'emotion': emotion}))
 
 
     for i in range(17):
